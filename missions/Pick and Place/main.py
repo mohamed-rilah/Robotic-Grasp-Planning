@@ -172,12 +172,11 @@ def main():
 
     # co-ordinates converted
     world_cords = convert_coordinates(173, 205, depth_img, view_matrix, proj_matrix)
-
     print(f'World Co-ordinates: {world_cords}')
 
+    # gripper orientation
     theta = 0.0004
     gripper_orientation = [np.cos(theta / 2), 0, 0, np.sin(theta / 2)]
-
     print(f'Gripper Orientation {gripper_orientation}')
 
     # going to calculated location 
