@@ -7,6 +7,13 @@ from util import move_to_joint_pos, gripper_open, gripper_close
 import matplotlib.pyplot as plt
 import numpy as np
 
+import os 
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+
+from external.ggcnn.candidate_grasps import grasp_predictor
+
 def move_to_ee_pose(robot_id, ee_link_id, target_ee_pos, target_ee_orientation=None):
     """
     Moves the robot to a given end-effector pose.
@@ -194,10 +201,13 @@ def automate_grasps(robot_id, object_id, tray_id):
     view_matrix, proj_matrix = get_ee_camera_view(robot_id, util.ROBOT_EE_LINK_ID)
     rgb_img, depth_img = get_camera_image(view_matrix, proj_matrix)
 
-    # Co-ordinate conversion + gripper orientation
-    world_cords = convert_coordinates(173, 205, depth_img, view_matrix, proj_matrix)
-    theta = 0.0004
-    gripper_orientation = [np.cos(theta / 2), 0, 0, np.sin(theta / 2)]
+    # calling function from candidate_graps.py
+    depth_image_path = 'images/cube_small.png'
+    x, y, angle_radians = grasp_predictor(depth_image_path)
+
+    # plugging predicted values into converter
+    world_cords = convert_coordinates(x, y, depth_img, view_matrix, proj_matrix)
+    gripper_orientation = [np.cos(angle_radians / 2), 0, 0, np.sin(angle_radians / 2)]
 
     # going to calculated location 
     print(f'going to calculated grasp centre {world_cords}')
