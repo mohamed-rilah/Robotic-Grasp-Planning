@@ -10,6 +10,8 @@ import numpy as np
 import os 
 import sys
 
+import csv
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 from external.ggcnn.candidate_grasps import grasp_predictor
@@ -236,58 +238,77 @@ def automate_grasps(robot_id, object_id, tray_id):
     print('Grasp Completed!')
 
 def automate_batch_grasps(robot_id, object_id, tray_id): 
-    # pre-grasp 
-    print('going above cube')
-    move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, [0.5, -0.3, 0.225])
-    gripper_open(robot_id)
+    """
+    Allows the automation of batch graps bypassing the GUI, using DIRECT mode
+    :param robot_id: pyBullet's body id of the robot
+    :param object_id: pyBullet id for the cube
+    :param tray_id: pyBullet id for the tray
+    """
+    # location of results file
+    results_path = os.path.join('results', 'cube_grasp_results.csv')
 
-    # camera view at pre-grasp
-    view_matrix, proj_matrix = get_ee_camera_view(robot_id, util.ROBOT_EE_LINK_ID)
-    rgb_img, depth_img = get_camera_image(view_matrix, proj_matrix)
-
-    # calling function from candidate_graps.py
-    depth_image_path = 'images/cube_small.png'
-
-    grasp_candidates = batch_graps_predictor(depth_image_path)
-
-    for i, grasp in enumerate(grasp_candidates): 
-        print(f'Attempting Grasp {i+1}')
-
-        x, y, angle_radians = grasp[0], grasp[1], grasp[2]
-
-        # plugging predicted values into converter
-        world_cords = convert_coordinates(x, y, depth_img, view_matrix, proj_matrix)
-        gripper_orientation = [np.cos(angle_radians / 2), 0, 0, np.sin(angle_radians / 2)]
-
-        # going to calculated location 
-        print(f'going to calculated grasp centre {world_cords}')
-        move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, world_cords, gripper_orientation)
-        gripper_close(robot_id)
-
-        # going to location of tray
-        print('going to tray location')
-        move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, [0.5, 0.5, 0.3])
-        gripper_open(robot_id)
-
-        # displaying location of cube
-        cube_position, _ = p.getBasePositionAndOrientation(object_id)
-        print(f'Final Cube Position: {cube_position}')
-
-        # call to validation function, to measure grasp success
-        is_success = grasp_success(object_id, tray_id)
-        print(f'Result -- {is_success}')
-
-        p.resetBasePositionAndOrientation(object_id, [0.5, -0.3, 0.025], [0,0,0,1])
+    # writing into results csv
+    with open(results_path, mode='w', newline='') as file: 
+        writer = csv.writer(file)
+        writer.writerow(['Grasp Number', 'X Pixel', 'Y Pixel', 'Angle', 'World Co-ordinates', 'Result'])
 
         # pre-grasp 
         print('going above cube')
         move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, [0.5, -0.3, 0.225])
         gripper_open(robot_id)
 
+        # camera view at pre-grasp
+        view_matrix, proj_matrix = get_ee_camera_view(robot_id, util.ROBOT_EE_LINK_ID)
+        rgb_img, depth_img = get_camera_image(view_matrix, proj_matrix)
+
+        # calling function from candidate_graps.py
+        depth_image_path = 'images/cube_small.png'
+
+        grasp_candidates = batch_graps_predictor(depth_image_path)
+
+        for i, grasp in enumerate(grasp_candidates): 
+            print(f'Attempting Grasp {i+1}')
+
+            x, y, angle_radians = grasp[0], grasp[1], grasp[2]
+
+            # plugging predicted values into converter
+            world_cords = convert_coordinates(x, y, depth_img, view_matrix, proj_matrix)
+            gripper_orientation = [np.cos(angle_radians / 2), 0, 0, np.sin(angle_radians / 2)]
+
+            # going to calculated location 
+            print(f'going to calculated grasp centre {world_cords}')
+            move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, world_cords, gripper_orientation)
+            gripper_close(robot_id)
+
+            # going to location of tray
+            print('going to tray location')
+            move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, [0.5, 0.5, 0.3])
+            gripper_open(robot_id)
+
+            # displaying location of cube
+            cube_position, _ = p.getBasePositionAndOrientation(object_id)
+            print(f'Final Cube Position: {cube_position}')
+
+            # call to validation function, to measure grasp success
+            is_success = grasp_success(object_id, tray_id)
+            print(f'Result -- {is_success}')
+
+            # writing result as a row in the csv
+            writer.writerow([
+                i + 1, x, y, angle_radians, world_cords, is_success
+            ])
+
+            p.resetBasePositionAndOrientation(object_id, [0.5, -0.3, 0.025], [0,0,0,1])
+
+            # pre-grasp 
+            print('going above cube')
+            move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, [0.5, -0.3, 0.225])
+            gripper_open(robot_id)
+
     # home config
     print('going to home configuration')
     move_to_joint_pos(robot_id, util.ROBOT_HOME_CONFIG)
-    print('Batch Grasping Complete')
+    print('Batch Grasping Complete - Results saved to results/cube_grasp_results')
 
 def main():
     # mode selection 

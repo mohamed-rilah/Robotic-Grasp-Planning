@@ -1,0 +1,6 @@
+Grasp Number,X Pixel,Y Pixel,Angle,World Co-ordinates,Result
+1,161,181,0.023144258,[ 0.48845758 -0.31282149  0.05012745],"Success, cube is in tray"
+2,173,205,0.041307803,[ 0.48663877 -0.29531872  0.05012652],"Success, cube is in tray"
+3,167,220,-0.3790483,[ 0.49378534 -0.28776078  0.05012541],"Failed, cube is not in tray"
+4,161,180,0.028129244,[ 0.48821949 -0.31344892  0.05012752],"Failed, cube is not in tray"
+5,169,184,-0.11466456,[ 0.48414018 -0.30908319  0.0501274 ],"Failed, cube is not in tray"
