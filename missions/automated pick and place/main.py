@@ -18,6 +18,8 @@ from external.ggcnn.candidate_grasps import grasp_predictor
 
 from external.ggcnn.candidate_grasps import batch_graps_predictor
 
+from external.ggcnn.candidate_grasps import batch_nms_predictor
+
 def move_to_ee_pose(robot_id, ee_link_id, target_ee_pos, target_ee_orientation=None):
     """
     Moves the robot to a given end-effector pose.
@@ -245,7 +247,7 @@ def automate_batch_grasps(robot_id, object_id, tray_id):
     :param tray_id: pyBullet id for the tray
     """
     # location of results file
-    results_path = os.path.join('results', 'cube_grasp_results.csv')
+    results_path = os.path.join('results', 'cube_grasp_nms_results.csv')
 
     # writing into results csv
     with open(results_path, mode='w', newline='') as file: 
@@ -264,7 +266,7 @@ def automate_batch_grasps(robot_id, object_id, tray_id):
         # calling function from candidate_graps.py
         depth_image_path = 'images/cube_small.png'
 
-        grasp_candidates = batch_graps_predictor(depth_image_path)
+        grasp_candidates = batch_nms_predictor(depth_image_path)
 
         for i, grasp in enumerate(grasp_candidates): 
             print(f'Attempting Grasp {i+1}')
@@ -320,6 +322,11 @@ def main():
 
     # connect to pybullet in direct mode
     p.connect(p.DIRECT)
+
+    # pybullet connection to GUI (if wanting to visualise)
+    # p.connect(p.GUI)
+    # p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+    # p.resetDebugVisualizerCamera(1.7, 60, -30, [0.2, 0.2, 0.25])
 
     p.setGravity(0, 0, -9.81) # setting gravity
     p.setAdditionalSearchPath(pybullet_data.getDataPath())  # allows us to load plane, robots, etc.
