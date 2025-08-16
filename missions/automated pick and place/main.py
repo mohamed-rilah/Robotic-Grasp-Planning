@@ -16,9 +16,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 
 from external.ggcnn.candidate_grasps import grasp_predictor
 
-from external.ggcnn.candidate_grasps import batch_graps_predictor
-
 from external.ggcnn.candidate_grasps import batch_nms_predictor
+
+from shapes import create_sphere
+
+SIMULATION_CONSTANTS = {
+    'depth_image_path': 'images/sphere.png',
+    'results_file_path': 'sphere_results.csv', 
+}
 
 def move_to_ee_pose(robot_id, ee_link_id, target_ee_pos, target_ee_orientation=None):
     """
@@ -149,13 +154,13 @@ def convert_coordinates(x, y, depth_buffer, view_matrix, projection_matrix, widt
 def grasp_success(object_id, tray_id): 
     """
     Using built-in position retrieval code, this function can determine whether a grasp was successful
-    The function works by comparing the position of the cube in relation to the destination tray, to validate whether it was placed successfully 
-    :param object_id: pyBullet id for the cube
+    The function works by comparing the position of the object in relation to the destination tray, to validate whether it was placed successfully 
+    :param object_id: pyBullet id for the object
     :param tray_id: pyBullet id for the tray
     """
     # Retrieving position of cube in simulation 
-    cube_position, _ = p.getBasePositionAndOrientation(object_id)
-    cube_x, cube_y, _ = cube_position
+    object_position, _ = p.getBasePositionAndOrientation(object_id)
+    object_x, object_y, _ = object_position
 
     # Retrieving position of tray in simulation 
     tray_position, _ = p.getBasePositionAndOrientation(tray_id)
@@ -169,10 +174,10 @@ def grasp_success(object_id, tray_id):
     y_min, y_max = tray_y - y_acceptance, tray_y + y_acceptance 
 
     # Finding if cube location intersects tray location
-    if x_min <= cube_x <= x_max and y_min <= cube_y <= y_max: 
-        return 'Success, cube is in tray'
+    if x_min <= object_x <= x_max and y_min <= object_y <= y_max: 
+        return 'Success, object is in tray'
     else: 
-        return 'Failed, cube is not in tray'
+        return 'Failed, object is not in tray'
      
 def generate_depth(robot_id): 
     """
@@ -180,26 +185,26 @@ def generate_depth(robot_id):
     :param robot_id: pyBullet's body id of the robot
     """
     # pre-grasp 
-    print('going above cube')
+    print('going above object')
     move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, [0.5, -0.3, 0.225])
     gripper_open(robot_id)
 
     # camera view at pre-grasp
     view_matrix, proj_matrix = get_ee_camera_view(robot_id, util.ROBOT_EE_LINK_ID)
     rgb_img, depth_img = get_camera_image(view_matrix, proj_matrix)
-    plt.imsave('images/cube_small.png', depth_img, cmap='gray')
+    plt.imsave(SIMULATION_CONSTANTS['depth_image_path'], depth_img, cmap='gray')
 
-    print('Image saved successfully')
+    print(f'Image saved successfully at {SIMULATION_CONSTANTS["depth_image_path"]}')
 
 def automate_grasps(robot_id, object_id, tray_id): 
     """
     Allows the automation of graps bypassing the GUI, using DIRECT mode
     :param robot_id: pyBullet's body id of the robot
-    :param object_id: pyBullet id for the cube
+    :param object_id: pyBullet id for the object
     :param tray_id: pyBullet id for the tray
     """
     # pre-grasp 
-    print('going above cube')
+    print('going above object')
     move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, [0.5, -0.3, 0.225])
     gripper_open(robot_id)
 
@@ -208,7 +213,7 @@ def automate_grasps(robot_id, object_id, tray_id):
     rgb_img, depth_img = get_camera_image(view_matrix, proj_matrix)
 
     # calling function from candidate_graps.py
-    depth_image_path = 'images/cube_small.png'
+    depth_image_path = SIMULATION_CONSTANTS['depth_image_path']
     x, y, angle_radians = grasp_predictor(depth_image_path)
 
     # plugging predicted values into converter
@@ -225,9 +230,9 @@ def automate_grasps(robot_id, object_id, tray_id):
     move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, [0.5, 0.5, 0.3])
     gripper_open(robot_id)
 
-    # displaying location of cube
-    cube_position, _ = p.getBasePositionAndOrientation(object_id)
-    print(f'Final Cube Position: {cube_position}')
+    # displaying location of object
+    object_position, _ = p.getBasePositionAndOrientation(object_id)
+    print(f'Final Cube Position: {object_position}')
 
     # call to validation function, to measure grasp success
     is_success = grasp_success(object_id, tray_id)
@@ -243,11 +248,11 @@ def automate_batch_grasps(robot_id, object_id, tray_id):
     """
     Allows the automation of batch graps bypassing the GUI, using DIRECT mode
     :param robot_id: pyBullet's body id of the robot
-    :param object_id: pyBullet id for the cube
+    :param object_id: pyBullet id for the object
     :param tray_id: pyBullet id for the tray
     """
     # location of results file
-    results_path = os.path.join('results', 'cube_grasp_nms_results.csv')
+    results_path = os.path.join('results', SIMULATION_CONSTANTS['results_file_path'])
 
     # writing into results csv
     with open(results_path, mode='w', newline='') as file: 
@@ -255,7 +260,7 @@ def automate_batch_grasps(robot_id, object_id, tray_id):
         writer.writerow(['Grasp Number', 'X Pixel', 'Y Pixel', 'Angle', 'World Co-ordinates', 'Result'])
 
         # pre-grasp 
-        print('going above cube')
+        print('going above object')
         move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, [0.5, -0.3, 0.225])
         gripper_open(robot_id)
 
@@ -264,7 +269,7 @@ def automate_batch_grasps(robot_id, object_id, tray_id):
         rgb_img, depth_img = get_camera_image(view_matrix, proj_matrix)
 
         # calling function from candidate_graps.py
-        depth_image_path = 'images/cube_small.png'
+        depth_image_path = SIMULATION_CONSTANTS['depth_image_path']
 
         grasp_candidates = batch_nms_predictor(depth_image_path)
 
@@ -288,8 +293,8 @@ def automate_batch_grasps(robot_id, object_id, tray_id):
             gripper_open(robot_id)
 
             # displaying location of cube
-            cube_position, _ = p.getBasePositionAndOrientation(object_id)
-            print(f'Final Cube Position: {cube_position}')
+            object_position, _ = p.getBasePositionAndOrientation(object_id)
+            print(f'Final Cube Position: {object_position}')
 
             # call to validation function, to measure grasp success
             is_success = grasp_success(object_id, tray_id)
@@ -303,14 +308,14 @@ def automate_batch_grasps(robot_id, object_id, tray_id):
             p.resetBasePositionAndOrientation(object_id, [0.5, -0.3, 0.025], [0,0,0,1])
 
             # pre-grasp 
-            print('going above cube')
+            print('going above object')
             move_to_ee_pose(robot_id, util.ROBOT_EE_LINK_ID, [0.5, -0.3, 0.225])
             gripper_open(robot_id)
 
     # home config
     print('going to home configuration')
     move_to_joint_pos(robot_id, util.ROBOT_HOME_CONFIG)
-    print('Batch Grasping Complete - Results saved to results/cube_grasp_results')
+    print(f'Batch Grasping Complete - Results saved to results/{SIMULATION_CONSTANTS["results_file_path"]}')
 
 def main():
     # mode selection 
@@ -335,6 +340,9 @@ def main():
 
     # load an object to be grasped
     object_id = p.loadURDF('cube_small.urdf', basePosition=[0.5, -0.3, 0.025], baseOrientation=[0, 0, 0, 1])
+
+    # object_id = create_sphere(radius=0.03, mass=1.0, base_position=[0.5, -0.3, 0.025], base_orientation=[0, 0, 0, 1])
+    
     p.resetVisualShapeData(object_id, -1, rgbaColor=[1, 0, 0, 1])
 
     # loading tray for object to be placed
