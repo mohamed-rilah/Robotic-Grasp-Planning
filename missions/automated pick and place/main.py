@@ -16,13 +16,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 
 from external.ggcnn.candidate_grasps import grasp_predictor
 
-from external.ggcnn.candidate_grasps import batch_nms_predictor
+from external.ggcnn.candidate_grasps import batch_nms_predictor, batch_graps_predictor
 
-from shapes import create_sphere
+from shapes import create_sphere, create_cylinder, create_cuboid
 
 SIMULATION_CONSTANTS = {
-    'depth_image_path': 'images/sphere.png',
-    'results_file_path': 'sphere_results.csv', 
+    'depth_image_path': 'images/cube_small.png',
+    'results_file_path': 'cube_small_results.csv', 
 }
 
 def move_to_ee_pose(robot_id, ee_link_id, target_ee_pos, target_ee_orientation=None):
@@ -341,8 +341,11 @@ def main():
     # load an object to be grasped
     object_id = p.loadURDF('cube_small.urdf', basePosition=[0.5, -0.3, 0.025], baseOrientation=[0, 0, 0, 1])
 
+    # Different geometric shapes tested in simulation
     # object_id = create_sphere(radius=0.03, mass=1.0, base_position=[0.5, -0.3, 0.025], base_orientation=[0, 0, 0, 1])
-    
+    # object_id = create_cylinder(radius=0.03, height=0.08 ,mass=1.0, base_position=[0.5, -0.3, 0.025], base_orientation=[0, 0, 0, 1])
+    # object_id = create_cuboid(width=0.1, length=0.05, height=0.05, mass=1.0, base_position=[0.5, -0.3, 0.025], base_orientation=[0, 0, 0, 1])
+
     p.resetVisualShapeData(object_id, -1, rgbaColor=[1, 0, 0, 1])
 
     # loading tray for object to be placed
