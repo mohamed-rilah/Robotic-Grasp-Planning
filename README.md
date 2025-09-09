@@ -14,4 +14,4 @@ pip install -r requirements.txt
 
 ## How to Use
 
-To evaluate grasp planning approaches with this pipeline, they need to be integrated, as with GG-CNN (Morrison, Corke and Leitner, 2019). With minor tweaks (if required), the approach can be visualised, without required parameters used in the main.py file
+To evaluate grasp planning approaches with this pipeline, they need to be integrated, as with GG-CNN (Morrison, Corke and Leitner, 2019). With minor tweaks (if required), the approach can be visualised, with required parameters used in the main.py file
